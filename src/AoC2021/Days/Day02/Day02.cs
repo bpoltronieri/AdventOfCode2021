@@ -18,24 +18,58 @@ namespace AoC2021.Days
 
         public string PartOne()
         {
-            var answer = 0;
-            for (var i = 0; i < input.Length; i++)
+            var horzn = 0;
+            var depth = 0;
+
+            foreach (var line in input)
             {
-                // int.Parse(input[i])
+                var command = line.Split(' ');
+                var dirn = command[0];
+                var dist = int.Parse(command[1]);
+                switch (dirn)
+                {
+                    case "down":
+                        depth += dist;
+                        break;
+                    case "up":
+                        depth -= dist;
+                        break;
+                    case "forward":
+                        horzn += dist;
+                        break;
+                }
+                
             }
-            return answer.ToString();
+            return (horzn * depth).ToString();
         }
 
         public string PartTwo()
         {
-            var answer = 0;
+            var horzn = 0;
+            var depth = 0;
+            var aim = 0;
 
-            for (var i = 0; i < input.Length; i++)
+            foreach (var line in input)
             {
-                // int.Parse(input[i-1])
+                var command = line.Split(' ');
+                var dirn = command[0];
+                var dist = int.Parse(command[1]);
+                switch (dirn)
+                {
+                    case "down":
+                        aim += dist;
+                        break;
+                    case "up":
+                        aim -= dist;
+                        break;
+                    case "forward":
+                        horzn += dist;
+                        depth += aim * dist;
+                        break;
+                }
+                
             }
-
-            return answer.ToString();
+            return (horzn * depth).ToString();
         }
     }
 }
