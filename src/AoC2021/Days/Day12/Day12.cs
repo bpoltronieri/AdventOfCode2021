@@ -39,82 +39,39 @@ namespace AoC2021.Days
 
         public string PartOne()
         {
-            var nPaths = 0;
-            var ongoingPaths = new Queue<CavePath>();
-            // initialise starting paths
-            caveLinks["start"].ForEach(cave => ongoingPaths.Enqueue(new CavePath(cave)));
-
-            while (ongoingPaths.Count > 0)
-            {   
-                var currentPath = ongoingPaths.Dequeue();
-                foreach (var cave in caveLinks[currentPath.currentCave])
-                {
-                    if (cave == "end")
-                    {
-                        nPaths += 1;
-                        continue;
-                    }
-                    else if (!currentPath.smallCavesVisited.Contains(cave))
-                    {
-                        var nextPath = new CavePath(cave, currentPath);
-                        if (IsSmallCave(currentPath.currentCave))
-                            nextPath.smallCavesVisited.Add(currentPath.currentCave);
-                        ongoingPaths.Enqueue(nextPath);
-                    }
-                }
-            }
-
-            return nPaths.ToString();
-        }
-
-        private bool IsSmallCave(string cave)
-        {
-            return cave.All(c => char.IsLower(c));
+            return CountCavePaths(false).ToString();
         }
 
         public string PartTwo()
         {
+            return CountCavePaths(true).ToString();
+        }
+
+        private int CountCavePaths(bool canVisitSmallCaveTwice)
+        {
             var nPaths = 0;
             var ongoingPaths = new Queue<CavePath>();
-            // initialise starting paths
-            caveLinks["start"].ForEach(cave => ongoingPaths.Enqueue(new CavePath(cave)));
-            foreach (var path in ongoingPaths)
-            {
-                // path.pathString += path.currentCave + ",";
-                if (IsSmallCave(path.currentCave))
-                    path.smallCavesVisited.Add(path.currentCave);
-            }
-
+            ongoingPaths.Enqueue(new CavePath("start", canVisitSmallCaveTwice));
             while (ongoingPaths.Count > 0)
             {   
                 var currentPath = ongoingPaths.Dequeue();
-                foreach (var cave in caveLinks[currentPath.currentCave])
+                foreach (var cave in caveLinks[currentPath.CurrentCave])
                 {
-                    if (cave == "start")
-                        continue; // can't visit start twice
                     if (cave == "end")
                     {
-                        //Console.WriteLine(currentPath.pathString + "end");
                         nPaths += 1;
-                        continue; // can't visit end twice
+                        //Console.WriteLine(currentPath.pathString + "end");
+                        continue;
                     }
-                    else if (!(currentPath.smallCavesVisited.Contains(cave) && currentPath.visitedSmallCaveTwice)) 
+                    else if (currentPath.CanVisitCave(cave))
                     {
-                        var nextPath = new CavePath(cave, currentPath);
-                        //nextPath.pathString += cave + ",";
-                        if (IsSmallCave(cave))
-                        {
-                            if (nextPath.smallCavesVisited.Contains(cave))
-                                nextPath.visitedSmallCaveTwice = true;
-                            else
-                                nextPath.smallCavesVisited.Add(cave);
-                        }
+                        var nextPath = new CavePath(currentPath);
+                        nextPath.AddCaveToPath(cave);
                         ongoingPaths.Enqueue(nextPath);
                     }
                 }
             }
-
-            return nPaths.ToString();
+            return nPaths;
         }
     }
 }
