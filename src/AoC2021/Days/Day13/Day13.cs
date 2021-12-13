@@ -63,7 +63,7 @@ namespace AoC2021.Days
                     if (startDots.Contains(new Tuple<int, int>(x, y)))
                         startPaper[x,y] = '#';
                     else
-                        startPaper[x,y] = '.';
+                        startPaper[x,y] = ' ';
                 }
         }
 
