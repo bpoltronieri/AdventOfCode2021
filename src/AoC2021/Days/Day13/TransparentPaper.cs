@@ -1,11 +1,15 @@
 using System;
-using System.Linq;
 using System.Text;
 
 namespace AoC2021.Days.Day13Utils
 {
     class TransparentPaper
     {
+        // currently creating a full 2D array for the paper,
+        // but should probably be rewritten to just work on a 
+        // Hashset of positions with dots, and move each one to 
+        // its reflected position after each fold.
+        // Performance was fast enough so I didn't bother
         private char[,] paper;
         private int width; // becomes smaller after folding left
         private int height; // becomes smaller after folding up
