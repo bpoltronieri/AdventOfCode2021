@@ -22,8 +22,8 @@ namespace AoC2021.Tests.Days
             var result2 = day17.PartTwo();
 
             // assert
-            Assert.Equal("0", result1);
-            Assert.Equal("0", result2);
+            Assert.Equal("45", result1);
+            Assert.Equal("112", result2);
         }
     }
 }
