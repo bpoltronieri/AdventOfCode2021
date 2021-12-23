@@ -51,33 +51,34 @@ namespace AoC2021.Days.Day22Utils
                 return subCuboids;
 
             // slice up current cuboid by all the planes of negativeCuboid
-            // could optimise by reducing max number of sub-cuboids to 6, currently 27
             if (InInterval(negativeCuboid.xInterval.Item1, xInterval))
-                SliceByPlane(ref subCuboids, 'x', negativeCuboid.xInterval.Item1);
+                SliceByPlane(ref subCuboids, 'x', negativeCuboid.xInterval.Item1, negativeCuboid);
             if (InInterval(negativeCuboid.xInterval.Item2, xInterval))
-                SliceByPlane(ref subCuboids, 'x', negativeCuboid.xInterval.Item2 + 1);
+                SliceByPlane(ref subCuboids, 'x', negativeCuboid.xInterval.Item2 + 1, negativeCuboid);
             if (InInterval(negativeCuboid.yInterval.Item1, yInterval))
-                SliceByPlane(ref subCuboids, 'y', negativeCuboid.yInterval.Item1);
+                SliceByPlane(ref subCuboids, 'y', negativeCuboid.yInterval.Item1, negativeCuboid);
             if (InInterval(negativeCuboid.yInterval.Item2, yInterval))
-                SliceByPlane(ref subCuboids, 'y', negativeCuboid.yInterval.Item2 + 1);
+                SliceByPlane(ref subCuboids, 'y', negativeCuboid.yInterval.Item2 + 1, negativeCuboid);
             if (InInterval(negativeCuboid.zInterval.Item1, zInterval))
-                SliceByPlane(ref subCuboids, 'z', negativeCuboid.zInterval.Item1);
+                SliceByPlane(ref subCuboids, 'z', negativeCuboid.zInterval.Item1, negativeCuboid);
             if (InInterval(negativeCuboid.zInterval.Item2, zInterval))
-                SliceByPlane(ref subCuboids, 'z', negativeCuboid.zInterval.Item2 + 1);
+                SliceByPlane(ref subCuboids, 'z', negativeCuboid.zInterval.Item2 + 1, negativeCuboid);
 
             subCuboids.RemoveAll(c => negativeCuboid.Contains(c));
             return subCuboids;
         }
 
-        private void SliceByPlane(ref List<Cuboid> cuboids, char axis, int value)
+        private void SliceByPlane(ref List<Cuboid> cuboids, char axis, int value, Cuboid regionOfInterest)
         {
             // slices the given cuboids by the plane with the given axis as its normal
             // positioned at the start  of the cube at the given value
+            // only slices cuboids that overlap with the given region of interest
             var subCuboids = new List<Cuboid>();
             foreach (var cuboid in cuboids)
             {
                 var interval = cuboid.GetInterval(axis);
-                if (!StrictlyInInterval(value, (interval.Item1, interval.Item2 + 1)))
+                if (cuboid.IntersectWith(regionOfInterest) == null
+                    || !StrictlyInInterval(value, (interval.Item1, interval.Item2 + 1)))
                 {
                     subCuboids.Add(cuboid);
                     continue;
