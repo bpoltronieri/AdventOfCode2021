@@ -3,12 +3,12 @@ using System.Collections.Generic;
 
 namespace AoC2021.Days.Day23Utils
 {
-    struct MapState : IComparable<MapState>
+    struct MapState
     {
         public char[,] map;
         public int energyCost; // cost spent so far to reach this state
 
-        public List<string> history;
+        public List<string> history; // map history, for debugging only
 
         public MapState(char[,] map, int energyCost)
         {
@@ -29,26 +29,33 @@ namespace AoC2021.Days.Day23Utils
         public string HashString()
         {
             var hash = "";
-            var pointsOfInterest = new (int,int)[15] 
-                {
-                    (1,1), (2,1), (4,1), (6,1), (8,1), (10,1), (11,1),
-                    (3,2), (5,2), (7,2), (9,2), (3,3), (5,3), (7,3), (9,3)
-                };
-            foreach (var point in pointsOfInterest)
+            var hallwayPoints = new (int,int)[7] { (1,1), (2,1), (4,1), (6,1), (8,1), (10,1), (11,1) };
+            var roomXPosns = new int[4] {3, 5, 7, 9};
+            var roomDepth = map.GetLength(1) - 2;
+
+            foreach (var point in hallwayPoints)
                 hash += map[point.Item1, point.Item2];
+
+            for (var y = 2; y <= roomDepth; y++)
+                foreach (var x in roomXPosns)
+                    hash += map[x, y];
+
             return hash;
         }
 
         private void drawHashString(string hash)
         {
-            var lines = new string[5];
+            var lines = new string[map.GetLength(1)];
             lines[0] = "#############";
             lines[1] = "#" + hash.Substring(0,2) + "."
                         + hash[2] + "." + hash[3] + "." 
                         + hash[4] + "." + hash.Substring(5,2) + "#";
             lines[2] = "###" + hash[7] + "#" + hash[8] + "#" + hash[9] + "#" + hash[10] + "###";
-            lines[3] = "  #" + hash[11] + "#" + hash[12] + "#" + hash[13] + "#" + hash[14] + "#";
-            lines[4] = "  #########";
+
+            for (var i = 0; i < map.GetLength(1) - 4; i++)
+                lines[3+i] = "  #" + hash[11+4*i] + "#" + hash[12+4*i] + "#" + hash[13+4*i] + "#" + hash[14+4*i] + "#";
+
+            lines[map.GetLength(1) - 1] = "  #########";
             
             foreach (var line in lines)
                 Console.WriteLine(line);
@@ -70,11 +77,6 @@ namespace AoC2021.Days.Day23Utils
                     line += map[x,y];
                 Console.WriteLine(line);
             }
-        }
-
-        public int CompareTo(MapState other)
-        {
-            return this.energyCost - other.energyCost;
         }
     }
 }

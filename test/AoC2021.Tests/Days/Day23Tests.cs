@@ -23,7 +23,7 @@ namespace AoC2021.Tests.Days
 
             // assert
             Assert.Equal("12521", result1);
-            Assert.Equal("0", result2);
+            Assert.Equal("44169", result2);
         }
     }
 }

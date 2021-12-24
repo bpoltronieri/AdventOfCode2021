@@ -9,6 +9,7 @@ namespace AoC2021.Days
     public class Day23 : IDay
     {
         private char[,] inputMap;
+        private int roomDepth = 3;
 
         private Dictionary<char,int> energyCosts = new Dictionary<char, int>()
             { {'A', 1}, {'B', 10}, {'C', 100}, {'D', 1000} };
@@ -32,17 +33,49 @@ namespace AoC2021.Days
 
         public string PartOne()
         {
+            var startMap = CopyMap(inputMap);
+            var lowestCost = CheapestCompletionCost(startMap);
+            return lowestCost.ToString();
+        }
+
+        public string PartTwo()
+        {
+            var startMap = UnfoldInputMap();
+            var lowestCost = CheapestCompletionCost(startMap);
+            return lowestCost.ToString();
+        }
+
+        private char[,] UnfoldInputMap()
+        {
+            roomDepth = 5;
+            var startMap = new char[inputMap.GetLength(0), inputMap.GetLength(1) + 2];
+            var extraLines = new string[2] {"  #D#C#B#A#  ", "  #D#B#A#C#  "};
+            for (var y = 0; y < 3; y++)
+                for (var x = 0; x < inputMap.GetLength(0); x++)
+                    startMap[x,y] = inputMap[x,y];
+
+            for (var y = 3; y < 5; y++)
+                for (var x = 0; x < inputMap.GetLength(0); x++)
+                    startMap[x,y] = extraLines[y-3][x];
+
+            for (var y = 5; y < inputMap.GetLength(1) + 2; y++)
+                for (var x = 0; x < inputMap.GetLength(0); x++)
+                    startMap[x,y] = inputMap[x,y-2];
+
+            return startMap;
+        }
+
+        private int CheapestCompletionCost(char[,] startMap)
+        {
             var visitedStates = new Dictionary<string, int>(); // maps MapState's hash string to lowest cost found to reach it.
             var ongoingPaths = new Stack<MapState>();
-            ongoingPaths.Push(new MapState(CopyMap(inputMap), 0));
+            ongoingPaths.Push(new MapState(CopyMap(startMap), 0));
             var lowestCost = int.MaxValue;
             while (ongoingPaths.Count > 0)
             {   
                 var currentState = ongoingPaths.Pop();
-
                 var stateHash = currentState.HashString();
-                if (visitedStates.ContainsKey(stateHash)
-                    && visitedStates[stateHash] <= currentState.energyCost)
+                if (visitedStates.ContainsKey(stateHash) && visitedStates[stateHash] <= currentState.energyCost)
                     continue;
                 else
                     visitedStates[currentState.HashString()] = currentState.energyCost;
@@ -50,12 +83,9 @@ namespace AoC2021.Days
                 // currentState.DrawMap();
                 if (IsComplete(currentState.map))
                 {
-                    if (currentState.energyCost < lowestCost)
-                    {
-                        lowestCost = currentState.energyCost;
-                        // currentState.DrawHistory();
-                        ongoingPaths = new Stack<MapState>(ongoingPaths.Where(p => p.energyCost < lowestCost));
-                    }
+                    lowestCost = currentState.energyCost; // must be lower than lowest or would have been pruned by visistedStates
+                    // currentState.DrawHistory();
+                    ongoingPaths = new Stack<MapState>(ongoingPaths.Where(p => p.energyCost < lowestCost));
                     continue;
                 }
 
@@ -64,18 +94,11 @@ namespace AoC2021.Days
                 // try to move an amphipod from current room to its own room
                 foreach (var room in GetMapRooms().Where(R => map[R.Item1, R.Item2] != '.' && !AmphipodInFinalPosition(map, R)))
                 {
-                    var amphipod = map[room.Item1, room.Item2];
-                    // first try to go straight to amphipod's final position
                     var straightToRoom = AmphipodCanGoRoomToRoom(map, room);
                     if (straightToRoom != null)
                     {
                         var (ownRoom, steps) = straightToRoom.Value;
-                        var newMap = CopyMap(map);
-                        newMap[room.Item1, room.Item2] = '.';
-                        newMap[ownRoom.Item1, ownRoom.Item2] = amphipod;
-                        var newCost = currentState.energyCost + steps * energyCosts[amphipod];
-                        if (newCost < lowestCost)
-                            ongoingPaths.Push(new MapState(newMap, newCost, currentState.history)); 
+                        MakeMove(ongoingPaths, lowestCost, currentState, room, ownRoom, steps);
                         done = true; // moving straight to room must be the best
                         break;
                     }
@@ -85,17 +108,11 @@ namespace AoC2021.Days
                 // try to move an amphipod from hallway to its room
                 foreach (var hall in GetMapHallways().Where(H => map[H.Item1, H.Item2] != '.'))
                 {
-                    var amphipod = map[hall.Item1, hall.Item2];
                     var toRoom = AmphipodCanGoHallToRoom(map, hall);
                     if (toRoom != null)
                     {
                         var (ownRoom, steps) = toRoom.Value;
-                        var newMap = CopyMap(map);
-                        newMap[hall.Item1, hall.Item2] = '.';
-                        newMap[ownRoom.Item1, ownRoom.Item2] = amphipod;
-                        var newCost = currentState.energyCost + steps * energyCosts[amphipod];
-                        if (newCost < lowestCost)
-                            ongoingPaths.Push(new MapState(newMap, newCost, currentState.history)); 
+                        MakeMove(ongoingPaths, lowestCost, currentState, hall, ownRoom, steps);
                         done = true; // moving straight to room must be the best
                         break;
                     }
@@ -104,28 +121,24 @@ namespace AoC2021.Days
 
                 // otherwise try to move amphipod from room to hallway
                 foreach (var room in GetMapRooms().Where(R => map[R.Item1, R.Item2] != '.' && !AmphipodInFinalPosition(map, R)))
-                {
-                    var amphipod = map[room.Item1, room.Item2];
                     foreach (var (hall, steps) in GetAmphipodPossibleHallwayStops(map, room))
-                    {
-                        var newMap = CopyMap(map);
-                        newMap[room.Item1, room.Item2] = '.';
-                        newMap[hall.Item1, hall.Item2] = amphipod;
-                        var newCost = currentState.energyCost + steps * energyCosts[amphipod];
-
-                        if (newCost < lowestCost)
-                            ongoingPaths.Push(new MapState(newMap, newCost, currentState.history));
-                    }
-                }
+                        MakeMove(ongoingPaths, lowestCost, currentState, room, hall, steps);
             }
-
-            return lowestCost.ToString();
+            return lowestCost;
         }
 
-        public string PartTwo()
+        private void MakeMove(Stack<MapState> ongoingPaths, int lowestCost, MapState currentState, (int, int) from, (int, int) to, int steps)
         {
-            var answer = 0;
-            return answer.ToString();
+            // makes a copy of the current map state and makes the given move from 'from' to 'to'
+            // adds it to the stack of map states given that it doesn't cost more than the lowest cost so far
+            var amphipod = currentState.map[from.Item1, from.Item2];
+            var newCost = currentState.energyCost + steps * energyCosts[amphipod];
+            if (newCost >= lowestCost) return;
+
+            var newMap = CopyMap(currentState.map);
+            newMap[from.Item1, from.Item2] = '.';
+            newMap[to.Item1, to.Item2] = amphipod;
+            ongoingPaths.Push(new MapState(newMap, newCost, currentState.history)); 
         }
 
         private IEnumerable<(int,int)> GetMapHallways()
@@ -137,10 +150,11 @@ namespace AoC2021.Days
         private IEnumerable<(int,int)> GetMapRooms()
         {
             foreach (var x in roomXPosns.Values)
-                for (var y = 2; y <= 3; y++)
+                for (var y = 2; y <= roomDepth; y++)
                     yield return (x,y);
         }
 
+        // the next few functions could probably be simplified by a simple CanGetFromAToB function...
         private ((int,int), int)? AmphipodCanGoHallToRoom(char[,] map, (int, int) hall)
         {
             var amphipod = map[hall.Item1, hall.Item2];
@@ -148,7 +162,7 @@ namespace AoC2021.Days
 
             // check room has space for amphipod
             var roomY = -1; // how deep in the room the amphipod would go
-            for (var y = 2; y <= 3; y++)
+            for (var y = 2; y <= roomDepth; y++)
             {
                 if (map[roomX, y] != amphipod && map[roomX, y] != '.')
                     return null;
@@ -228,11 +242,12 @@ namespace AoC2021.Days
 
         private bool AmphipodInFinalPosition(char[,] map, (int, int) room)
         {
+            // whether given amphipod is already in its final position
             var amphipod = map[room.Item1, room.Item2];
             if (IsRoom(room) && room.Item1 == roomXPosns[amphipod])
             {
                 // check we don't have a different type of amphipod lower in the room
-                for (var y = room.Item2 + 1; y <= 3; y++)
+                for (var y = room.Item2 + 1; y <= roomDepth; y++)
                 {
                     if (map[room.Item1, y] != amphipod)
                         return false;
@@ -249,16 +264,21 @@ namespace AoC2021.Days
 
         private bool IsComplete(char[,] map)
         {
-            return map[3,2] == 'A' && map[3,3] == 'A'
-                && map[5,2] == 'B' && map[5,3] == 'B'
-                && map[7,2] == 'C' && map[7,3] == 'C'
-                && map[9,2] == 'D' && map[9,3] == 'D';
+            var complete = true;
+            foreach (var p in roomXPosns)
+            {
+                for (var y = 2; y <= roomDepth && complete; y++)
+                    if (map[p.Value, y] != p.Key)
+                        complete = false;
+                if (!complete) break;
+            }
+            return complete;
         }
 
         private bool IsRoom((int,int) position)
         {
             return roomXPosns.ContainsValue(position.Item1) 
-                && (position.Item2 == 2 || position.Item2 == 3);
+                && (position.Item2 >= 2 || position.Item2 <= roomDepth);
         }
 
         private bool IsOutsideRoomDoor((int,int) position)
@@ -268,7 +288,8 @@ namespace AoC2021.Days
 
         private bool IsHallway((int,int) position)
         {
-            return position.Item2 == 1 && inputMap[position.Item1, position.Item2] == '.';
+            return position.Item2 == 1 
+                && position.Item2 > 0 && position.Item2 < 12;
         }
 
     }
