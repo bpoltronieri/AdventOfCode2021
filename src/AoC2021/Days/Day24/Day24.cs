@@ -22,7 +22,21 @@ namespace AoC2021.Days
 
         public string PartOne()
         {
-            // solved this one by hand by examining the input code
+            // solved this one by hand by examining the input code and
+            // getting the following relations between the digits:
+
+            // d4 = d3 - 6
+            // d7 = d6
+            // d9 = d8 + 7
+            // d10 = d5 - 8
+            // d11 = d2 + 1
+            // d12 = d1 - 3
+            // d13 = d0 - 2
+
+            // given that each digit is between 1 and 9, this gives us
+            // lower and upper bounds on each digit. maximise most
+            // significant digit in each pair to get the highest valid number
+
             var highest = 99893999291967;
 
             if (!ValidModelNumber(highest))
@@ -34,6 +48,8 @@ namespace AoC2021.Days
         public string PartTwo()
         {
             // solved this one by hand by examining the input code
+            // this time maximise the least significant digits
+            
             var lowest = 34171911181211;
 
             if (!ValidModelNumber(lowest))
