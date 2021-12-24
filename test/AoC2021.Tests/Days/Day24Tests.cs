@@ -17,13 +17,15 @@ namespace AoC2021.Tests.Days
             var inputFile = Directory.GetFiles(path + @"/TestInput", "Day24_1.txt")[0];
             var day24 = new Day24(inputFile);
 
+            // no example inputs for this day
+
             // act
-            var result1 = day24.PartOne();
-            var result2 = day24.PartTwo();
+            // var result1 = day24.PartOne();
+            // var result2 = day24.PartTwo();
 
             // assert
-            Assert.Equal("0", result1);
-            Assert.Equal("0", result2);
+            // Assert.Equal("0", result1);
+            // Assert.Equal("0", result2);
         }
     }
 }
