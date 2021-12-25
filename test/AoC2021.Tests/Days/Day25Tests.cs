@@ -19,11 +19,11 @@ namespace AoC2021.Tests.Days
 
             // act
             var result1 = day25.PartOne();
-            var result2 = day25.PartTwo();
+            // var result2 = day25.PartTwo(); // no part two on day 25
 
             // assert
-            Assert.Equal("0", result1);
-            Assert.Equal("0", result2);
+            Assert.Equal("58", result1);
+            // Assert.Equal("0", result2);
         }
     }
 }
