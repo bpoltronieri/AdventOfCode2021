@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Windows;
+using System.Windows.Media.Imaging;
 
 namespace AoC2021.Days
 {
@@ -32,7 +35,7 @@ namespace AoC2021.Days
                         .ToList();
         }
 
-        private void UpdateCovered(Dictionary<Tuple<int, int>, int> covered, int[][] line)
+        private IEnumerable<Tuple<int,int>> LinePoints(int[][] line)
         {
             var start_x = line[0][0];
             var end_x = line[1][0];
@@ -47,15 +50,21 @@ namespace AoC2021.Days
                         : Math.Abs(end_y - start_y) + 1;
 
             for (var i = 0; i < n_steps; i++)
-            {
-                var position = new Tuple<int,int>(start_x + i * step_x, start_y + i * step_y);
-                if (covered.ContainsKey(position))
-                    covered[position] += 1;
-                else
-                    covered[position] = 1;
-            }
+                yield return new Tuple<int,int>(start_x + i * step_x, start_y + i * step_y);
+        }
 
-        return;
+        private void UpdateCoveredByPoint (Dictionary<Tuple<int, int>, int> covered, Tuple<int,int> position)
+        {
+            if (covered.ContainsKey(position))
+                covered[position] += 1;
+            else
+                covered[position] = 1;
+        }
+
+        private void UpdateCoveredByLine (Dictionary<Tuple<int, int>, int> covered, int[][] line)
+        {
+            foreach (var p in LinePoints(line))
+                UpdateCoveredByPoint(covered, p);
         }
 
         private bool LineIsHorzOrVert(int[][] x)
@@ -69,15 +78,58 @@ namespace AoC2021.Days
             ParseInputIntoLines()
                 .Where(x => LineIsHorzOrVert(x)) 
                 .ToList()
-                .ForEach(l => UpdateCovered(covered, l));
+                .ForEach(l => UpdateCoveredByLine(covered, l));
             return covered.Values.Count(x => x > 1).ToString();
         }
 
         public string PartTwo()
         {
             var covered = new Dictionary<Tuple<int,int>, int>(); // maps x,y to number of times covered
-            ParseInputIntoLines().ForEach(l => UpdateCovered(covered, l));
+            ParseInputIntoLines().ForEach(l => UpdateCoveredByLine(covered, l));
+            // CreateAndSaveGif(covered);
             return covered.Values.Count(x => x > 1).ToString();
+        }
+
+        // visualisation
+        private void CreateAndSaveGif(Dictionary<Tuple<int,int>, int> covered)
+        {
+            var lines = ParseInputIntoLines();
+            var minX = lines.Min(l => Math.Min(l[0][0], l[1][0]));
+            var maxX = lines.Max(l => Math.Max(l[0][0], l[1][0]));
+            var width = maxX - minX + 1;
+            var minY = lines.Min(l => Math.Min(l[0][1], l[1][1]));
+            var maxY = lines.Max(l => Math.Max(l[0][1], l[1][1]));
+            var height = maxY - minY + 1;
+            
+            var frames = new List<Bitmap>();
+            var bmp = new Bitmap(width, height);
+            frames.Add(bmp);
+            foreach (var line in lines)
+            {
+                bmp = new Bitmap(width, height);
+                foreach (var p in LinePoints(line))
+                {
+                    if (covered[p] > 1)
+                        bmp.SetPixel(p.Item1 - minX, p.Item2 - minY, Color.Red);
+                    else
+                        bmp.SetPixel(p.Item1 - minX, p.Item2 - minY, Color.Blue);
+                }
+                frames.Add(bmp);
+            }
+
+            System.Windows.Media.Imaging.GifBitmapEncoder gEnc = new GifBitmapEncoder();
+            foreach (System.Drawing.Bitmap bmpImage in frames)
+            {
+                var hbmp = bmpImage.GetHbitmap();
+                var src = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(
+                    hbmp,
+                    IntPtr.Zero,
+                    Int32Rect.Empty,
+                    BitmapSizeOptions.FromEmptyOptions());
+                gEnc.Frames.Add(BitmapFrame.Create(src));
+            }
+            using(FileStream fs = new FileStream("Visualisations/5_2.gif", FileMode.Create))
+                gEnc.Save(fs);
         }
     }
 }
