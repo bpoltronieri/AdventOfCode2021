@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Windows;
+using System.Windows.Media.Imaging;
 using AoC2021.Days.Day23Utils;
 
 namespace AoC2021.Days
@@ -16,6 +19,8 @@ namespace AoC2021.Days
         
         private Dictionary<char,int> roomXPosns = new Dictionary<char, int>()
             { {'A', 3}, {'B', 5}, {'C', 7}, {'D', 9} };
+
+        private MapState lowestState; // for visualisation
 
         public Day23(string file)
         {
@@ -42,6 +47,7 @@ namespace AoC2021.Days
         {
             var startMap = UnfoldInputMap();
             var lowestCost = CheapestCompletionCost(startMap);
+            // CreateAndSaveGif(lowestState);
             return lowestCost.ToString();
         }
 
@@ -84,6 +90,7 @@ namespace AoC2021.Days
                 if (IsComplete(currentState.map))
                 {
                     lowestCost = currentState.energyCost; // must be lower than lowest or would have been pruned by visistedStates
+                    lowestState = currentState;
                     // currentState.DrawHistory();
                     ongoingPaths = new Stack<MapState>(ongoingPaths.Where(p => p.energyCost < lowestCost));
                     continue;
@@ -290,6 +297,52 @@ namespace AoC2021.Days
         {
             return position.Item2 == 1 
                 && position.Item2 > 0 && position.Item2 < 12;
+        }
+
+        // visualisation
+        private Bitmap CreateBitmap(string[] map)
+        {
+            var fontSize = 16.0f;
+            var textHeight = (float)(fontSize * 1.333);
+            var fontFamily = new FontFamily("Consolas");
+            var font = new Font(fontFamily, fontSize, System.Drawing.FontStyle.Regular);
+            var brush = new SolidBrush(Color.White);
+
+            var bmp = new Bitmap((int)Math.Ceiling(map[0].Length * fontSize * 0.8), (int)Math.Ceiling(map.Length * textHeight));
+            Graphics bmpGraphics = Graphics.FromImage(bmp);
+            bmpGraphics.Clear(Color.Black);
+            for (var y = 0; y < map.Length; y++)
+            {
+                bmpGraphics.DrawString(map[y], font, brush, new PointF(0, y * textHeight));
+            }
+            // bmp = new Bitmap(bmp, new System.Drawing.Size(bmp.Width * 3, bmp.Height * 3)); // to scale up
+            return bmp;
+        }
+
+        private void CreateAndSaveGif(MapState state)
+        {
+            var bitmapList = new List<Bitmap>();
+            foreach (var hashString in state.history)
+            {
+                var map = state.HashStringToStringMap(hashString);
+                bitmapList.Add(CreateBitmap(map));
+                bitmapList.Add(bitmapList.Last());
+                bitmapList.Add(bitmapList.Last()); // triple each frame to slow down gif...
+            }
+            System.Windows.Media.Imaging.GifBitmapEncoder gEnc = new GifBitmapEncoder();
+
+            foreach (System.Drawing.Bitmap bmpImage in bitmapList)
+            {
+                var bmp = bmpImage.GetHbitmap();
+                var src = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(
+                    bmp,
+                    IntPtr.Zero,
+                    Int32Rect.Empty,
+                    BitmapSizeOptions.FromEmptyOptions());
+                gEnc.Frames.Add(BitmapFrame.Create(src));
+            }
+            using(FileStream fs = new FileStream("Visualisations/23_2.gif", FileMode.Create))
+                gEnc.Save(fs);
         }
 
     }

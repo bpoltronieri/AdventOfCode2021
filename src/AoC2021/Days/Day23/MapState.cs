@@ -43,7 +43,7 @@ namespace AoC2021.Days.Day23Utils
             return hash;
         }
 
-        private void drawHashString(string hash)
+        public string[] HashStringToStringMap(string hash)
         {
             var lines = new string[map.GetLength(1)];
             lines[0] = "#############";
@@ -56,8 +56,12 @@ namespace AoC2021.Days.Day23Utils
                 lines[3+i] = "  #" + hash[11+4*i] + "#" + hash[12+4*i] + "#" + hash[13+4*i] + "#" + hash[14+4*i] + "#";
 
             lines[map.GetLength(1) - 1] = "  #########";
-            
-            foreach (var line in lines)
+            return lines;
+        }
+
+        private void drawHashString(string hash)
+        {
+            foreach (var line in HashStringToStringMap(hash))
                 Console.WriteLine(line);
             Console.WriteLine("");
         }
